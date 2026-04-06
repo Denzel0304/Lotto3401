@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>내 전용 로또 관리자</title>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --success: #34c759;
+            --danger: #ff3b30;
+            --bg: #f2f2f7;
+            --pastel-green: #b2dfdb;
+            --pastel-pink: #ffcdd2;
+        }
+        body {
+            font-family: -apple-system, sans-serif;
+            background: var(--bg);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-bottom: 50px;
+        }
+        .card {
+            width: 100%;
+            max-width: 450px;
+            background: white;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+        h3 { margin: 0; font-size: 1.1rem; color: #333; }
+
+        /* ── LOCK SCREEN ── */
+        #lockScreen {
+            position: fixed; inset: 0;
+            background: var(--bg);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            z-index: 9999;
+        }
+        .lock-box {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 32px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: flex; flex-direction: column;
+            align-items: center; gap: 16px;
+            width: 280px;
+        }
+        .lock-title {
+            font-size: 1.4rem; font-weight: bold; color: #333;
+        }
+        .lock-input {
+            width: 100%; padding: 14px; border-radius: 12px;
+            border: 1px solid #ddd; font-size: 1.1rem;
+            text-align: center; letter-spacing: 6px; outline: none;
+            box-sizing: border-box;
+        }
+        .lock-input:focus { border-color: var(--primary); }
+        .lock-input.error { border-color: var(--danger); animation: shake 0.3s; }
+        .lock-btn {
+            width: 100%; padding: 14px; border-radius: 12px;
+            background: var(--primary); color: white;
+            font-size: 1rem; font-weight: bold;
+            border: none; cursor: pointer;
+        }
+        .lock-err { font-size: 0.85rem; color: var(--danger); height: 16px; }
+        @keyframes shake {
+            0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)}
+        }
+
+        #app { display: none; width: 100%; display: none; flex-direction: column; align-items: center; }
+
+        #customModal {
+            display: none; position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 1000;
+            justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: white; width: 85%; max-width: 320px;
+            padding: 25px; border-radius: 24px; text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: popUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .modal-msg {
+            font-size: 1rem; color: #333; line-height: 1.6;
+            margin-bottom: 25px; word-break: keep-all;
+            font-weight: 500; white-space: pre-line;
+        }
+        .modal-btn-group { display: flex; gap: 10px; }
+        .modal-btn {
+            flex: 1; padding: 14px; border-radius: 14px;
+            font-weight: bold; border: none; cursor: pointer; font-size: 0.95rem;
+        }
+        .btn-confirm { background: var(--primary); color: white; }
+        .btn-cancel  { background: #eee; color: #666; }
+        @keyframes popUp {
+            from { opacity: 0; transform: scale(0.9); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+
+        .display-area {
+            display: flex; justify-content: center; align-items: center;
+            gap: 6px; margin: 15px 0; min-height: 45px;
+        }
+        .ball-container {
+            display: flex; flex-direction: row;
+            justify-content: center; gap: 5px; flex-wrap: nowrap;
+            align-items: center;
+        }
+        .ball {
+            width: 32px; height: 32px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; color: white; font-size: 0.8rem;
+            box-shadow: inset -2px -2px 4px rgba(0,0,0,0.1); flex-shrink: 0;
+        }
+        .ball.small { width: 24px; height: 24px; font-size: 0.68rem; }
+        .ball.matched { outline: 3px solid #ff3b30; outline-offset: 2px; }
+        .color-1 { background: #fbc400; }
+        .color-2 { background: #69c8f2; }
+        .color-3 { background: #ff7272; }
+        .color-4 { background: #aaaaaa; }
+        .color-5 { background: #b0d840; }
+
+        .manual-grid {
+            display: grid; grid-template-columns: repeat(7, 1fr);
+            gap: 6px; margin: 15px 0; width: 100%;
+        }
+        .num-btn {
+            aspect-ratio: 1; border: 1px solid #ddd; border-radius: 8px;
+            background: white; font-size: 0.9rem; font-weight: 600;
+            cursor: pointer; -webkit-tap-highlight-color: transparent;
+        }
+        .num-btn.selected { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .btn-main {
+            width: 100%; padding: 14px; border: none; border-radius: 12px;
+            font-size: 1rem; font-weight: bold; cursor: pointer;
+        }
+        .btn-gen  { background: var(--primary); color: white; margin-bottom: 8px; }
+        .btn-save { background: var(--success); color: white; margin-top: 8px; }
+        .btn-save:disabled { background: #ccc; opacity: 0.6; cursor: default; }
+
+        .top-actions {
+            display: flex; gap: 10px; margin-bottom: 15px;
+            width: 100%; max-width: 450px;
+        }
+        .btn-top-pink {
+            background-color: var(--pastel-pink); color: #c62828;
+            flex: 1; border-radius: 12px; padding: 12px;
+            font-weight: bold; border: none; cursor: pointer;
+        }
+
+        .list-header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .win-numbers-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+            min-height: 36px;
+            margin-bottom: 10px;
+        }
+
+        .list-item {
+            background: #f9f9f9; padding: 15px; border-radius: 15px;
+            margin-bottom: 12px; border-left: 5px solid #ddd;
+        }
+        .list-item.checked { border-left-color: var(--success); background: #f0fdf4; }
+        .draw-info {
+            font-size: 0.75rem; color: #888; margin-bottom: 10px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .win-tag { font-weight: 900; font-size: 0.9rem; }
+        .result-miss    { color: #aaa; }
+        .result-5th     { color: #ff9500; }
+        .result-4th     { color: #ff6b00; }
+        .result-3rd     { color: #ff3b30; }
+        .result-1st     { color: #fbc400; }
+        .result-unknown { color: #aaa; }
+
+        .matched-section {
+            margin-top: 10px; padding: 8px 10px;
+            background: #fff3f3; border-radius: 8px;
+            display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+        }
+        .matched-label { font-size: 0.7rem; color: #888; white-space: nowrap; }
+
+        .action-row { display: flex; gap: 8px; margin-top: 12px; }
+        .btn-check {
+            background: var(--pastel-green); color: #00695c;
+            padding: 10px; font-size: 0.85rem; flex: 2;
+            border-radius: 8px; border: none; font-weight: bold; cursor: pointer;
+        }
+        .btn-check:disabled { background: #e0e0e0; color: #9e9e9e; cursor: default; }
+        .btn-delete {
+            background: white; color: var(--danger);
+            border: 1px solid var(--danger); padding: 10px;
+            font-size: 0.85rem; flex: 1; border-radius: 8px; font-weight: bold; cursor: pointer;
+        }
+        .info-banner {
+            background: #fff3cd; border-left: 4px solid #ffc107;
+            padding: 10px 14px; border-radius: 10px;
+            font-size: 0.8rem; color: #856404; margin-bottom: 12px; line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ══ LOCK ══ -->
+<div id="lockScreen">
+    <div class="lock-box">
+        <div class="lock-title">🎲 로또 관리자</div>
+        <input class="lock-input" id="pwInput" type="password" maxlength="10"
+               placeholder="····" autocomplete="off"
+               onkeydown="if(event.key==='Enter')unlock()">
+        <div class="lock-err" id="lockErr"></div>
+        <button class="lock-btn" onclick="unlock()">확인</button>
+    </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app">
+
+    <div id="customModal">
+        <div class="modal-content">
+            <div id="modalMsg" class="modal-msg"></div>
+            <div class="modal-btn-group" id="modalBtns"></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>🎲 랜덤 번호 생성</h3>
+        <div id="autoBalls" class="display-area"><span style="color:#ccc;">번호를 생성하세요</span></div>
+        <button class="btn-main btn-gen" onclick="generateAuto()">랜덤 번호 생성</button>
+        <button id="saveAutoBtn" class="btn-main btn-save" onclick="saveNumbers('auto')" disabled>랜덤 번호 저장</button>
+    </div>
+
+    <div class="card">
+        <h3>✍️ 수동 번호 입력</h3>
+        <div id="manualBalls" class="display-area"><span style="color:#ccc;">6개를 선택하세요</span></div>
+        <div class="manual-grid" id="manualGrid"></div>
+        <button id="saveManualBtn" class="btn-main btn-save" onclick="saveNumbers('manual')" disabled>수동 번호 저장</button>
+    </div>
+
+    <div class="top-actions">
+        <button class="btn-top-pink" onclick="deleteAllLottos()">전체 삭제</button>
+    </div>
+
+    <div class="card">
+        <div class="list-header-top">
+            <h3>📂 목록</h3>
+            <span id="latestRoundInfo" style="font-size:0.68rem; color:#aaa; font-weight:600; white-space:nowrap;"></span>
+        </div>
+        <div id="latestWinBalls" class="win-numbers-row"></div>
+        <div class="info-banner">
+            🤖 당첨 확인은 매주 토요일 밤 9시 10분 이후 자동으로 업데이트됩니다.
+        </div>
+        <div id="lottoList">불러오는 중...</div>
+    </div>
+
+</div>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwfT3TN_enz1JNUKA1_XTDnKS9rvjbmGq7b-SbenrrtVJPOSxpEcMF2iLlRvH5iOUFE/exec';
+const LS_KEY   = 'lotto_auth';
+const LS_TOKEN = 'lotto_token';
+
+// ── GAS 호출 ──
+async function gasCall(params) {
+  const token = localStorage.getItem(LS_TOKEN);
+  const res = await fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ ...params, token }).toString()
+  });
+  return await res.json();
+}
+
+// ── 자동 로그인 체크 ──
+window.addEventListener('DOMContentLoaded', () => {
+  if (localStorage.getItem(LS_KEY) === 'ok' && localStorage.getItem(LS_TOKEN)) {
+    document.getElementById('lockScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    fetchList();
+  }
+});
+
+// ── Lock ──
+async function unlock() {
+  const val = document.getElementById('pwInput').value;
+  const result = await gasCall({ action: 'checkPassword', password: val });
+  if (result.success) {
+    localStorage.setItem(LS_KEY, 'ok');
+    localStorage.setItem(LS_TOKEN, result.token);
+    document.getElementById('lockScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    fetchList();
+  } else {
+    const inp = document.getElementById('pwInput');
+    document.getElementById('lockErr').textContent = result.message || '비밀번호가 틀렸습니다';
+    inp.classList.add('error');
+    inp.value = '';
+    setTimeout(() => { inp.classList.remove('error'); document.getElementById('lockErr').textContent = ''; }, 1500);
+  }
+}
+
+let autoNums = [], manualNums = [], currentData = [];
+
+function showModal(msg, type = 'alert', onConfirm = null) {
+    const modal = document.getElementById('customModal');
+    const msgBox = document.getElementById('modalMsg');
+    const btnGrp = document.getElementById('modalBtns');
+    msgBox.innerText = msg;
+    btnGrp.innerHTML = '';
+    if (type === 'confirm') {
+        const cBtn = document.createElement('button');
+        cBtn.className = 'modal-btn btn-cancel'; cBtn.innerText = '취소';
+        cBtn.onclick = () => modal.style.display = 'none';
+        const sBtn = document.createElement('button');
+        sBtn.className = 'modal-btn btn-confirm'; sBtn.innerText = '확인';
+        sBtn.onclick = () => { modal.style.display = 'none'; onConfirm(); };
+        btnGrp.appendChild(cBtn); btnGrp.appendChild(sBtn);
+    } else {
+        const okBtn = document.createElement('button');
+        okBtn.className = 'modal-btn btn-confirm'; okBtn.innerText = '확인';
+        okBtn.onclick = () => modal.style.display = 'none';
+        btnGrp.appendChild(okBtn);
+    }
+    modal.style.display = 'flex';
+}
+
+function getCol(n) {
+    if (n <= 10) return 'color-1';
+    if (n <= 20) return 'color-2';
+    if (n <= 30) return 'color-3';
+    if (n <= 40) return 'color-4';
+    return 'color-5';
+}
+
+function getNextSaturday(dateStr) {
+    const d = new Date(dateStr);
+    const diff = (6 - d.getDay() + 7) % 7;
+    let res = new Date(d);
+    res.setDate(d.getDate() + diff);
+    if (d.getDay() === 6 && d.getHours() >= 21) res.setDate(res.getDate() + 7);
+    return res.toISOString().split('T')[0];
+}
+
+function generateAuto() {
+    autoNums = [];
+    while (autoNums.length < 6) {
+        const n = Math.floor(Math.random() * 45) + 1;
+        if (!autoNums.includes(n)) autoNums.push(n);
+    }
+    autoNums.sort((a, b) => a - b);
+    document.getElementById('autoBalls').innerHTML =
+        `<div class="ball-container">${autoNums.map(n => `<div class="ball ${getCol(n)}">${n}</div>`).join('')}</div>`;
+    document.getElementById('saveAutoBtn').disabled = false;
+}
+
+function initGrid() {
+    const grid = document.getElementById('manualGrid');
+    grid.innerHTML = '';
+    for (let i = 1; i <= 45; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'num-btn'; btn.innerText = i;
+        btn.onclick = () => toggleManualNumber(i, btn);
+        grid.appendChild(btn);
+    }
+}
+
+function toggleManualNumber(num, btn) {
+    if (manualNums.includes(num)) {
+        manualNums = manualNums.filter(n => n !== num);
+        btn.classList.remove('selected');
+    } else {
+        if (manualNums.length >= 6) return;
+        manualNums.push(num);
+        btn.classList.add('selected');
+    }
+    manualNums.sort((a, b) => a - b);
+    const container = document.getElementById('manualBalls');
+    if (manualNums.length === 0) {
+        container.innerHTML = '<span style="color:#ccc;">6개를 선택하세요</span>';
+    } else {
+        container.innerHTML = `<div class="ball-container">${manualNums.map(n =>
+            `<div class="ball ${getCol(n)}">${n}</div>`).join('')}</div>`;
+    }
+    document.getElementById('saveManualBtn').disabled = manualNums.length !== 6;
+}
+
+async function saveNumbers(type) {
+    const targetNums = (type === 'auto') ? autoNums : manualNums;
+    const result = await gasCall({
+        action: 'saveNumbers',
+        numbers: JSON.stringify(targetNums)
+    });
+    if (result.success) {
+        const targetId = type === 'auto' ? 'autoBalls' : 'manualBalls';
+        document.getElementById(targetId).innerHTML =
+            `<span style="font-weight:bold; color:var(--success)">✅ 저장 완료!</span>`;
+        document.getElementById(type === 'auto' ? 'saveAutoBtn' : 'saveManualBtn').disabled = true;
+        if (type === 'manual') {
+            manualNums = [];
+            document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected'));
+        } else { autoNums = []; }
+        fetchList();
+    }
+}
+
+async function fetchList() {
+    const result = await gasCall({ action: 'fetchList' });
+    if (!result.success) return;
+    const data = result.data;
+    currentData = data;
+
+    const lastChecked = data.find(d => d.is_checked && d.round);
+    const winBallsEl  = document.getElementById('latestWinBalls');
+    const roundInfoEl = document.getElementById('latestRoundInfo');
+
+    if (lastChecked) {
+        const drawDate = getNextSaturday(lastChecked.created_at);
+        roundInfoEl.innerText = `${drawDate} ${lastChecked.round}회차 확인완료`;
+        if (lastChecked.win_numbers && lastChecked.win_numbers.length) {
+            winBallsEl.innerHTML =
+                `<span style="font-size:0.8rem;color:#333;font-weight:bold;margin-right:2px;">1등:</span>` +
+                lastChecked.win_numbers.map(n =>
+                    `<div class="ball ${getCol(n)}">${n}</div>`).join('');
+        } else {
+            winBallsEl.innerHTML = '';
+        }
+    } else {
+        roundInfoEl.innerText = '';
+        winBallsEl.innerHTML = '';
+    }
+
+    const container = document.getElementById('lottoList');
+    if (!data.length) {
+        container.innerHTML = '<p style="text-align:center;color:#ccc;">저장된 번호가 없습니다.</p>';
+        return;
+    }
+
+    container.innerHTML = data.map(item => {
+        const drawDate = getNextSaturday(item.created_at);
+        const isDone   = item.is_checked;
+        const result   = item.win_result || '미확인';
+
+        let resultCls = 'result-unknown';
+        if (result.includes('1등'))      resultCls = 'result-1st';
+        else if (result.includes('3등')) resultCls = 'result-3rd';
+        else if (result.includes('4등')) resultCls = 'result-4th';
+        else if (result.includes('5등')) resultCls = 'result-5th';
+        else if (result === '낙첨')      resultCls = 'result-miss';
+
+        const winNums = (isDone && item.win_numbers) ? item.win_numbers.map(Number) : [];
+        const myBalls = item.numbers.map(n => {
+            const isMatch = winNums.includes(Number(n));
+            return `<div class="ball ${getCol(n)}${isMatch ? ' matched' : ''}">${n}</div>`;
+        }).join('');
+
+        let roundInfo = '';
+        if (item.round) {
+            roundInfo = `<span style="font-size:0.72rem;color:#aaa;margin-left:4px;">${item.round}회차</span>`;
+        } else if (lastChecked && lastChecked.round) {
+            roundInfo = `<span style="font-size:0.72rem;color:#aaa;margin-left:4px;">${lastChecked.round + 1}회차</span>`;
+        }
+
+        let matchedSection = '';
+        if (isDone && winNums.length && item.match_count > 0) {
+            const matchedNums = item.numbers.filter(n => winNums.includes(Number(n)));
+            const matchBalls  = matchedNums.map(n =>
+                `<div class="ball small ${getCol(n)}">${n}</div>`).join('');
+            matchedSection = `
+                <div class="matched-section">
+                    <span class="matched-label">🎯 일치 ${item.match_count}개:</span>
+                    ${matchBalls}
+                </div>`;
+        } else if (isDone) {
+            matchedSection = `<div style="margin-top:8px;font-size:0.72rem;color:#aaa;">🎯 일치 번호 없음</div>`;
+        }
+
+        return `
+            <div class="list-item ${isDone ? 'checked' : ''}">
+                <div class="draw-info">
+                    <span>추첨일: <b>${drawDate}</b>${roundInfo}</span>
+                    <span class="win-tag ${resultCls}">${result}</span>
+                </div>
+                <div class="ball-container" style="justify-content:flex-start;">
+                    ${myBalls}
+                </div>
+                ${matchedSection}
+                <div class="action-row">
+                    <button class="btn-check" disabled>
+                        ${isDone ? '✅ 확인 완료' : '⏳ 자동 확인 대기중'}
+                    </button>
+                    <button class="btn-delete" onclick="deleteItem('${item.id}')">삭제</button>
+                </div>
+            </div>`;
+    }).join('');
+}
+
+function deleteItem(id) {
+    showModal('정말 삭제하시겠습니까?', 'confirm', async () => {
+        await gasCall({ action: 'deleteItem', id });
+        fetchList();
+    });
+}
+
+function deleteAllLottos() {
+    showModal('모든 번호를 삭제하시겠습니까?', 'confirm', async () => {
+        await gasCall({ action: 'deleteAllLottos' });
+        fetchList();
+    });
+}
+
+initGrid();
+</script>
+</body>
+</html>
