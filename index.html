@@ -74,7 +74,7 @@
             0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)}
         }
 
-        #app { display: none; width: 100%; display: none; flex-direction: column; align-items: center; }
+        #app { display: none; width: 100%; flex-direction: column; align-items: center; }
 
         #customModal {
             display: none; position: fixed;
@@ -121,6 +121,7 @@
             box-shadow: inset -2px -2px 4px rgba(0,0,0,0.1); flex-shrink: 0;
         }
         .ball.small { width: 24px; height: 24px; font-size: 0.68rem; }
+        .ball.win   { width: 26px; height: 26px; font-size: 0.7rem; }
         .ball.matched { outline: 3px solid #ff3b30; outline-offset: 2px; }
         .color-1 { background: #fbc400; }
         .color-2 { background: #69c8f2; }
@@ -163,14 +164,6 @@
             align-items: center;
             margin-bottom: 8px;
         }
-        .win-numbers-row {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            flex-wrap: wrap;
-            min-height: 36px;
-            margin-bottom: 10px;
-        }
 
         .list-item {
             background: #f9f9f9; padding: 15px; border-radius: 15px;
@@ -189,12 +182,15 @@
         .result-1st     { color: #fbc400; }
         .result-unknown { color: #aaa; }
 
-        .matched-section {
-            margin-top: 10px; padding: 8px 10px;
-            background: #fff3f3; border-radius: 8px;
-            display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+        .win-section {
+            margin-top: 8px; padding: 8px 12px;
+            background: #fff8e1; border-radius: 8px;
+            border-left: 3px solid #fbc400;
+            display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
         }
-        .matched-label { font-size: 0.7rem; color: #888; white-space: nowrap; }
+        .win-section-label {
+            font-size: 0.68rem; color: #888; white-space: nowrap; margin-right: 2px;
+        }
 
         .action-row { display: flex; gap: 8px; margin-top: 12px; }
         .btn-check {
@@ -260,9 +256,7 @@
     <div class="card">
         <div class="list-header-top">
             <h3>📂 목록</h3>
-            <span id="latestRoundInfo" style="font-size:0.68rem; color:#aaa; font-weight:600; white-space:nowrap;"></span>
         </div>
-        <div id="latestWinBalls" class="win-numbers-row"></div>
         <div class="info-banner">
             🤖 당첨 확인은 매주 토요일 밤 9시 10분 이후 자동으로 업데이트됩니다.
         </div>
@@ -276,7 +270,6 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbwfT3TN_enz1JNUKA1_XTDn
 const LS_KEY   = 'lotto_auth';
 const LS_TOKEN = 'lotto_token';
 
-// ── GAS 호출 ──
 async function gasCall(params) {
   const token = localStorage.getItem(LS_TOKEN);
   const res = await fetch(GAS_URL, {
@@ -287,7 +280,6 @@ async function gasCall(params) {
   return await res.json();
 }
 
-// ── 자동 로그인 체크 ──
 window.addEventListener('DOMContentLoaded', () => {
   if (localStorage.getItem(LS_KEY) === 'ok' && localStorage.getItem(LS_TOKEN)) {
     document.getElementById('lockScreen').style.display = 'none';
@@ -296,7 +288,6 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// ── Lock ──
 async function unlock() {
   const val = document.getElementById('pwInput').value;
   const result = await gasCall({ action: 'checkPassword', password: val });
@@ -425,26 +416,6 @@ async function fetchList() {
     const data = result.data;
     currentData = data;
 
-    const lastChecked = data.find(d => d.is_checked && d.round);
-    const winBallsEl  = document.getElementById('latestWinBalls');
-    const roundInfoEl = document.getElementById('latestRoundInfo');
-
-    if (lastChecked) {
-        const drawDate = getNextSaturday(lastChecked.created_at);
-        roundInfoEl.innerText = `${drawDate} ${lastChecked.round}회차 확인완료`;
-        if (lastChecked.win_numbers && lastChecked.win_numbers.length) {
-            winBallsEl.innerHTML =
-                `<span style="font-size:0.8rem;color:#333;font-weight:bold;margin-right:2px;">1등:</span>` +
-                lastChecked.win_numbers.map(n =>
-                    `<div class="ball ${getCol(n)}">${n}</div>`).join('');
-        } else {
-            winBallsEl.innerHTML = '';
-        }
-    } else {
-        roundInfoEl.innerText = '';
-        winBallsEl.innerHTML = '';
-    }
-
     const container = document.getElementById('lottoList');
     if (!data.length) {
         container.innerHTML = '<p style="text-align:center;color:#ccc;">저장된 번호가 없습니다.</p>';
@@ -454,40 +425,41 @@ async function fetchList() {
     container.innerHTML = data.map(item => {
         const drawDate = getNextSaturday(item.created_at);
         const isDone   = item.is_checked;
-        const result   = item.win_result || '미확인';
+        const result   = item.win_result || '추첨대기중';
 
         let resultCls = 'result-unknown';
-        if (result.includes('1등'))      resultCls = 'result-1st';
-        else if (result.includes('3등')) resultCls = 'result-3rd';
-        else if (result.includes('4등')) resultCls = 'result-4th';
-        else if (result.includes('5등')) resultCls = 'result-5th';
-        else if (result === '낙첨')      resultCls = 'result-miss';
+        if (result.includes('1등'))       resultCls = 'result-1st';
+        else if (result.includes('3등'))  resultCls = 'result-3rd';
+        else if (result.includes('4등'))  resultCls = 'result-4th';
+        else if (result.includes('5등'))  resultCls = 'result-5th';
+        else if (result === '낙첨')       resultCls = 'result-miss';
 
         const winNums = (isDone && item.win_numbers) ? item.win_numbers.map(Number) : [];
-        const myBalls = item.numbers.map(n => {
-            const isMatch = winNums.includes(Number(n));
+        const myNums  = item.numbers.map(Number);
+
+        const myBalls = myNums.map(n => {
+            const isMatch = winNums.includes(n);
             return `<div class="ball ${getCol(n)}${isMatch ? ' matched' : ''}">${n}</div>`;
         }).join('');
 
         let roundInfo = '';
-        if (item.round) {
-            roundInfo = `<span style="font-size:0.72rem;color:#aaa;margin-left:4px;">${item.round}회차</span>`;
-        } else if (lastChecked && lastChecked.round) {
-            roundInfo = `<span style="font-size:0.72rem;color:#aaa;margin-left:4px;">${lastChecked.round + 1}회차</span>`;
+        if (item.draw_round) {
+            roundInfo = `<span style="font-size:0.72rem;color:#aaa;margin-left:4px;">${item.draw_round}회차</span>`;
         }
 
-        let matchedSection = '';
-        if (isDone && winNums.length && item.match_count > 0) {
-            const matchedNums = item.numbers.filter(n => winNums.includes(Number(n)));
-            const matchBalls  = matchedNums.map(n =>
-                `<div class="ball small ${getCol(n)}">${n}</div>`).join('');
-            matchedSection = `
-                <div class="matched-section">
-                    <span class="matched-label">🎯 일치 ${item.match_count}개:</span>
-                    ${matchBalls}
+        let winSection = '';
+        if (isDone && winNums.length) {
+            const winBalls = winNums.map(n => {
+                const isMatch = myNums.includes(n);
+                return `<div class="ball win ${getCol(n)}${isMatch ? ' matched' : ''}">${n}</div>`;
+            }).join('');
+            winSection = `
+                <div class="win-section">
+                    <span class="win-section-label">🏆 1등:</span>
+                    ${winBalls}
                 </div>`;
         } else if (isDone) {
-            matchedSection = `<div style="margin-top:8px;font-size:0.72rem;color:#aaa;">🎯 일치 번호 없음</div>`;
+            winSection = `<div style="margin-top:8px;font-size:0.72rem;color:#aaa;">🎯 일치 번호 없음</div>`;
         }
 
         return `
@@ -499,10 +471,10 @@ async function fetchList() {
                 <div class="ball-container" style="justify-content:flex-start;">
                     ${myBalls}
                 </div>
-                ${matchedSection}
+                ${winSection}
                 <div class="action-row">
                     <button class="btn-check" disabled>
-                        ${isDone ? '✅ 확인 완료' : '⏳ 자동 확인 대기중'}
+                        ${isDone ? '✅ 확인 완료' : '⏳ 추첨대기중'}
                     </button>
                     <button class="btn-delete" onclick="deleteItem('${item.id}')">삭제</button>
                 </div>
