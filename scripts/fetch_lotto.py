@@ -9,7 +9,6 @@ SUPABASE_KEY = os.environ["SUPABASE_KEY"]
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def get_winning_numbers():
-    """GAS와 동일한 방식으로 네이버에서 로또 당첨번호 크롤링"""
     url = "https://search.naver.com/search.naver?where=nexearch&sm=top_hty&fbm=0&ie=utf8&query=%EB%A1%9C%EB%98%90&ackey=hjs3285m"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"
@@ -24,18 +23,15 @@ def get_winning_numbers():
 
     numbers = []
 
-    # 방법 1: ball_645 클래스 패턴
     matches = re.findall(r'class="ball_645[^"]*"[^>]*>(\d+)<', html)
     numbers = [int(m) for m in matches[:6]]
 
-    # 방법 2: winning_number div 내부
     if len(numbers) < 6:
         block = re.search(r'winning_number[^>]*>([\s\S]*?)</div>', html)
         if block:
             balls = re.findall(r'<span[^>]*ball[^>]*>(\d+)</span>', block.group(1))
             numbers = [int(b) for b in balls[:6]]
 
-    # 방법 3: num_win 패턴
     if len(numbers) < 6:
         matches = re.findall(r'class="num_win[^"]*"[^>]*>(\d+)<', html)
         numbers = [int(m) for m in matches[:6]]
@@ -44,7 +40,6 @@ def get_winning_numbers():
         print(f"❌ 번호 파싱 실패. 추출된 번호: {numbers}")
         return None
 
-    # 회차 + 날짜 추출 (GAS와 동일)
     date_match = re.search(r'(\d+)회차\s*[\(\（](\d{4})\.(\d{2})\.(\d{2})[\.\）\)]', html)
     if not date_match:
         print("❌ 회차/날짜 파싱 실패")
@@ -77,12 +72,12 @@ def main():
     win_nums = lotto["numbers"]
     round_num = lotto["round"]
 
-    # is_checked = FALSE인 row 전부 조회
-    response = supabase.table("zlotto").select("*").eq("is_checked", False).execute()
+    # draw_round가 현재 회차와 일치하고 is_checked=False인 것만 처리
+    response = supabase.table("zlotto").select("*").eq("is_checked", False).eq("draw_round", round_num).execute()
     rows = response.data
 
     if not rows:
-        print("ℹ️ 확인할 번호 없음.")
+        print(f"ℹ️ {round_num}회차에 해당하는 확인할 번호 없음.")
         return
 
     print(f"📋 미확인 항목: {len(rows)}개")
