@@ -341,12 +341,14 @@ function getCol(n) {
 
 function getNextSaturday(dateStr) {
     const d = new Date(dateStr);
-    d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
     const diff = (6 - d.getDay() + 7) % 7;
     let res = new Date(d);
     res.setDate(d.getDate() + diff);
     if (d.getDay() === 6 && d.getHours() >= 21) res.setDate(res.getDate() + 7);
-    return res.toISOString().split('T')[0];
+    const y = res.getFullYear();
+    const m = String(res.getMonth() + 1).padStart(2, '0');
+    const day = String(res.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
 }
 
 function generateAuto() {
