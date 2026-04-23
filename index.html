@@ -341,6 +341,7 @@ function getCol(n) {
 
 function getNextSaturday(dateStr) {
     const d = new Date(dateStr);
+    d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
     const diff = (6 - d.getDay() + 7) % 7;
     let res = new Date(d);
     res.setDate(d.getDate() + diff);
