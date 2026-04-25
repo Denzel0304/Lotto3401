@@ -2,8 +2,6 @@ name: 로또 당첨번호 확인
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '10 0 * * 0'  # 매주 일요일 09:10 KST (UTC 00:10)
 
 jobs:
   fetch-lotto:
