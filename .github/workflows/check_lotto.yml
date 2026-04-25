@@ -2,6 +2,8 @@ name: 로또 당첨번호 확인
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '10 0 * * 0'  # 매주 일요일 09:10 KST (UTC 00:10)
 
 jobs:
   fetch-lotto:
@@ -21,4 +23,6 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python scripts/fetch_lotto.py
