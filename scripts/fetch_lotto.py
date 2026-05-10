@@ -163,8 +163,9 @@ def main():
     win_nums = lotto["numbers"]
     round_num = lotto["round"]
 
-    # is_checked = FALSE인 row 전부 조회
-    response = supabase.table("zlotto").select("*").eq("is_checked", False).execute()
+    # is_checked = FALSE이면서 draw_round가 현재 추첨 회차와 일치하는 row만 조회
+    # (미래 회차로 저장된 row는 자기 회차 추첨 후에 자동 처리됨)
+    response = supabase.table("zlotto").select("*").eq("is_checked", False).eq("draw_round", round_num).execute()
     rows = response.data
 
     if not rows:
