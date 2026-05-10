@@ -169,8 +169,8 @@ def main():
     rows = response.data
 
     if not rows:
-        print("ℹ️ 확인할 번호 없음.")
-        send_telegram(f"ℹ️ {round_num}회차: 이번 주에 구매한 로또가 없습니다.")
+        # 구매한 로또가 없을 때는 텔레그램 알림 보내지 않음 (조용히 종료)
+        print(f"ℹ️ {round_num}회차: 확인할 번호 없음. 텔레그램 알림 생략.")
         return
 
     print(f"📋 미확인 항목: {len(rows)}개")
