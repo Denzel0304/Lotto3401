@@ -1,14 +1,19 @@
 import os
 import re
 import requests
-from supabase import create_client
+from supabase import create_client, ClientOptions
 
 SUPABASE_URL = os.environ["SUPABASE_URL"]
 SUPABASE_KEY = os.environ["SUPABASE_KEY"]
+ADMIN_TOKEN = os.environ["ADMIN_TOKEN"]
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase = create_client(
+    SUPABASE_URL,
+    SUPABASE_KEY,
+    options=ClientOptions(headers={"x-mac-secret": ADMIN_TOKEN})
+)
 
 
 def send_telegram(message: str):
