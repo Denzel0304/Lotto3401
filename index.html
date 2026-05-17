@@ -97,7 +97,7 @@
         .modal-btn {
             flex: 1; padding: 14px; border-radius: 14px;
             font-weight: bold; border: none; cursor: pointer; font-size: 0.95rem;
-            outline: none;
+            outline: none; -webkit-tap-highlight-color: transparent;
         }
         .btn-confirm { background: var(--primary); color: white; }
         .btn-cancel  { background: #eee; color: #666; }
@@ -311,6 +311,7 @@ let autoNums = [], manualNums = [], currentData = [];
 
 function closeModal() {
     document.getElementById('customModal').style.display = 'none';
+    history.back();
 }
 
 window.addEventListener('popstate', () => {
@@ -329,7 +330,7 @@ function showModal(msg, type = 'alert', onConfirm = null) {
     if (type === 'confirm') {
         const cBtn = document.createElement('button');
         cBtn.className = 'modal-btn btn-cancel'; cBtn.innerText = '취소';
-        cBtn.onclick = () => { history.back(); };
+        cBtn.onclick = () => { closeModal(); };
         const sBtn = document.createElement('button');
         sBtn.className = 'modal-btn btn-confirm'; sBtn.innerText = '확인';
         sBtn.onclick = () => { modal.style.display = 'none'; onConfirm(); };
