@@ -308,6 +308,17 @@ async function unlock() {
 
 let autoNums = [], manualNums = [], currentData = [];
 
+function closeModal() {
+    document.getElementById('customModal').style.display = 'none';
+}
+
+window.addEventListener('popstate', () => {
+    const modal = document.getElementById('customModal');
+    if (modal.style.display === 'flex') {
+        modal.style.display = 'none';
+    }
+});
+
 function showModal(msg, type = 'alert', onConfirm = null) {
     const modal = document.getElementById('customModal');
     const msgBox = document.getElementById('modalMsg');
@@ -317,7 +328,7 @@ function showModal(msg, type = 'alert', onConfirm = null) {
     if (type === 'confirm') {
         const cBtn = document.createElement('button');
         cBtn.className = 'modal-btn btn-cancel'; cBtn.innerText = '취소';
-        cBtn.onclick = () => modal.style.display = 'none';
+        cBtn.onclick = () => { history.back(); };
         const sBtn = document.createElement('button');
         sBtn.className = 'modal-btn btn-confirm'; sBtn.innerText = '확인';
         sBtn.onclick = () => { modal.style.display = 'none'; onConfirm(); };
@@ -325,9 +336,10 @@ function showModal(msg, type = 'alert', onConfirm = null) {
     } else {
         const okBtn = document.createElement('button');
         okBtn.className = 'modal-btn btn-confirm'; okBtn.innerText = '확인';
-        okBtn.onclick = () => modal.style.display = 'none';
+        okBtn.onclick = () => { history.back(); };
         btnGrp.appendChild(okBtn);
     }
+    history.pushState({ modal: true }, '');
     modal.style.display = 'flex';
 }
 
@@ -345,10 +357,7 @@ function getNextSaturday(dateStr) {
     let res = new Date(d);
     res.setDate(d.getDate() + diff);
     if (d.getDay() === 6 && d.getHours() >= 21) res.setDate(res.getDate() + 7);
-    const y = res.getFullYear();
-    const m = String(res.getMonth() + 1).padStart(2, '0');
-    const day = String(res.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
+    return res.toISOString().split('T')[0];
 }
 
 function generateAuto() {
