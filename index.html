@@ -318,19 +318,27 @@ function showModal(msg, type = 'alert', onConfirm = null) {
     if (type === 'confirm') {
         const cBtn = document.createElement('button');
         cBtn.className = 'modal-btn btn-cancel'; cBtn.innerText = '취소';
-        cBtn.onclick = () => modal.style.display = 'none';
+        cBtn.onclick = () => { modal.style.display = 'none'; history.back(); };
         const sBtn = document.createElement('button');
         sBtn.className = 'modal-btn btn-confirm'; sBtn.innerText = '확인';
-        sBtn.onclick = () => { modal.style.display = 'none'; onConfirm(); };
+        sBtn.onclick = () => { modal.style.display = 'none'; history.back(); onConfirm(); };
         btnGrp.appendChild(cBtn); btnGrp.appendChild(sBtn);
     } else {
         const okBtn = document.createElement('button');
         okBtn.className = 'modal-btn btn-confirm'; okBtn.innerText = '확인';
-        okBtn.onclick = () => modal.style.display = 'none';
+        okBtn.onclick = () => { modal.style.display = 'none'; history.back(); };
         btnGrp.appendChild(okBtn);
     }
     modal.style.display = 'flex';
+    history.pushState({ modal: true }, '');
 }
+
+window.addEventListener('popstate', () => {
+    const modal = document.getElementById('customModal');
+    if (modal.style.display === 'flex') {
+        modal.style.display = 'none';
+    }
+});
 
 function getCol(n) {
     if (n <= 10) return 'color-1';
