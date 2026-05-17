@@ -94,10 +94,13 @@
             font-weight: 500; white-space: pre-line;
         }
         .modal-btn-group { display: flex; gap: 10px; }
+        .modal-content, .modal-btn-group, .modal-btn {
+            -webkit-tap-highlight-color: transparent;
+        }
         .modal-btn {
             flex: 1; padding: 14px; border-radius: 14px;
             font-weight: bold; border: none; cursor: pointer; font-size: 0.95rem;
-            outline: none; -webkit-tap-highlight-color: transparent;
+            outline: none;
         }
         .btn-confirm { background: var(--primary); color: white; }
         .btn-cancel  { background: #eee; color: #666; }
@@ -309,12 +312,20 @@ async function unlock() {
 
 let autoNums = [], manualNums = [], currentData = [];
 
+let _modalClosingByBtn = false;
+
 function closeModal() {
-    document.getElementById('customModal').style.display = 'none';
+    const modal = document.getElementById('customModal');
+    modal.style.display = 'none';
+    _modalClosingByBtn = true;
     history.back();
 }
 
 window.addEventListener('popstate', () => {
+    if (_modalClosingByBtn) {
+        _modalClosingByBtn = false;
+        return;
+    }
     const modal = document.getElementById('customModal');
     if (modal.style.display === 'flex') {
         modal.style.display = 'none';
@@ -333,12 +344,12 @@ function showModal(msg, type = 'alert', onConfirm = null) {
         cBtn.onclick = () => { closeModal(); };
         const sBtn = document.createElement('button');
         sBtn.className = 'modal-btn btn-confirm'; sBtn.innerText = '확인';
-        sBtn.onclick = () => { modal.style.display = 'none'; onConfirm(); };
+        sBtn.onclick = () => { closeModal(); onConfirm(); };
         btnGrp.appendChild(cBtn); btnGrp.appendChild(sBtn);
     } else {
         const okBtn = document.createElement('button');
         okBtn.className = 'modal-btn btn-confirm'; okBtn.innerText = '확인';
-        okBtn.onclick = () => { history.back(); };
+        okBtn.onclick = () => { closeModal(); };
         btnGrp.appendChild(okBtn);
     }
     modal.style.display = 'flex';
