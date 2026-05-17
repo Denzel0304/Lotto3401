@@ -312,23 +312,15 @@ async function unlock() {
 
 let autoNums = [], manualNums = [], currentData = [];
 
-let _modalClosingByBtn = false;
-
 function closeModal() {
-    const modal = document.getElementById('customModal');
-    modal.style.display = 'none';
-    _modalClosingByBtn = true;
-    history.back();
+    document.getElementById('customModal').style.display = 'none';
 }
 
 window.addEventListener('popstate', () => {
-    if (_modalClosingByBtn) {
-        _modalClosingByBtn = false;
-        return;
-    }
     const modal = document.getElementById('customModal');
     if (modal.style.display === 'flex') {
         modal.style.display = 'none';
+        history.pushState({ modal: true }, '');
     }
 });
 
