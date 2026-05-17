@@ -87,7 +87,6 @@
             padding: 25px; border-radius: 24px; text-align: center;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
             animation: popUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            outline: none;
         }
         .modal-msg {
             font-size: 1rem; color: #333; line-height: 1.6;
@@ -157,6 +156,7 @@
             background-color: var(--pastel-pink); color: #c62828;
             flex: 1; border-radius: 12px; padding: 12px;
             font-weight: bold; border: none; cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .list-header-top {
@@ -230,7 +230,7 @@
 <div id="app">
 
     <div id="customModal">
-        <div class="modal-content" tabindex="-1">
+        <div class="modal-content">
             <div id="modalMsg" class="modal-msg"></div>
             <div class="modal-btn-group" id="modalBtns"></div>
         </div>
@@ -318,29 +318,19 @@ function showModal(msg, type = 'alert', onConfirm = null) {
     if (type === 'confirm') {
         const cBtn = document.createElement('button');
         cBtn.className = 'modal-btn btn-cancel'; cBtn.innerText = '취소';
-        cBtn.onclick = () => { modal.style.display = 'none'; history.back(); };
+        cBtn.onclick = () => modal.style.display = 'none';
         const sBtn = document.createElement('button');
         sBtn.className = 'modal-btn btn-confirm'; sBtn.innerText = '확인';
-        sBtn.onclick = () => { modal.style.display = 'none'; history.back(); onConfirm(); };
+        sBtn.onclick = () => { modal.style.display = 'none'; onConfirm(); };
         btnGrp.appendChild(cBtn); btnGrp.appendChild(sBtn);
     } else {
         const okBtn = document.createElement('button');
         okBtn.className = 'modal-btn btn-confirm'; okBtn.innerText = '확인';
-        okBtn.onclick = () => { modal.style.display = 'none'; history.back(); };
+        okBtn.onclick = () => modal.style.display = 'none';
         btnGrp.appendChild(okBtn);
     }
     modal.style.display = 'flex';
-    history.pushState({ modal: true }, '');
-    // 포커스를 modal-content로 명시적으로 이동 → 엉뚱한 요소에 포커스링 방지
-    modal.querySelector('.modal-content').focus();
 }
-
-window.addEventListener('popstate', () => {
-    const modal = document.getElementById('customModal');
-    if (modal.style.display === 'flex') {
-        modal.style.display = 'none';
-    }
-});
 
 function getCol(n) {
     if (n <= 10) return 'color-1';
