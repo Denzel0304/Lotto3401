@@ -339,8 +339,8 @@ function showModal(msg, type = 'alert', onConfirm = null) {
         okBtn.onclick = () => { history.back(); };
         btnGrp.appendChild(okBtn);
     }
-    history.pushState({ modal: true }, '');
     modal.style.display = 'flex';
+    history.pushState({ modal: true }, '');
 }
 
 function getCol(n) {
