@@ -94,13 +94,9 @@
             font-weight: 500; white-space: pre-line;
         }
         .modal-btn-group { display: flex; gap: 10px; }
-        .modal-content, .modal-btn-group, .modal-btn {
-            -webkit-tap-highlight-color: transparent;
-        }
         .modal-btn {
             flex: 1; padding: 14px; border-radius: 14px;
             font-weight: bold; border: none; cursor: pointer; font-size: 0.95rem;
-            outline: none;
         }
         .btn-confirm { background: var(--primary); color: white; }
         .btn-cancel  { background: #eee; color: #666; }
@@ -312,18 +308,6 @@ async function unlock() {
 
 let autoNums = [], manualNums = [], currentData = [];
 
-function closeModal() {
-    document.getElementById('customModal').style.display = 'none';
-}
-
-window.addEventListener('popstate', () => {
-    const modal = document.getElementById('customModal');
-    if (modal.style.display === 'flex') {
-        modal.style.display = 'none';
-        history.pushState({ modal: true }, '');
-    }
-});
-
 function showModal(msg, type = 'alert', onConfirm = null) {
     const modal = document.getElementById('customModal');
     const msgBox = document.getElementById('modalMsg');
@@ -333,20 +317,27 @@ function showModal(msg, type = 'alert', onConfirm = null) {
     if (type === 'confirm') {
         const cBtn = document.createElement('button');
         cBtn.className = 'modal-btn btn-cancel'; cBtn.innerText = '취소';
-        cBtn.onclick = () => { closeModal(); };
+        cBtn.onclick = () => { modal.style.display = 'none'; history.back(); };
         const sBtn = document.createElement('button');
         sBtn.className = 'modal-btn btn-confirm'; sBtn.innerText = '확인';
-        sBtn.onclick = () => { closeModal(); onConfirm(); };
+        sBtn.onclick = () => { modal.style.display = 'none'; history.back(); onConfirm(); };
         btnGrp.appendChild(cBtn); btnGrp.appendChild(sBtn);
     } else {
         const okBtn = document.createElement('button');
         okBtn.className = 'modal-btn btn-confirm'; okBtn.innerText = '확인';
-        okBtn.onclick = () => { closeModal(); };
+        okBtn.onclick = () => { modal.style.display = 'none'; history.back(); };
         btnGrp.appendChild(okBtn);
     }
     modal.style.display = 'flex';
     history.pushState({ modal: true }, '');
 }
+
+window.addEventListener('popstate', (e) => {
+    const modal = document.getElementById('customModal');
+    if (modal.style.display === 'flex') {
+        modal.style.display = 'none';
+    }
+});
 
 function getCol(n) {
     if (n <= 10) return 'color-1';
