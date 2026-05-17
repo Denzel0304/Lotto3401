@@ -87,6 +87,7 @@
             padding: 25px; border-radius: 24px; text-align: center;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
             animation: popUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            outline: none;
         }
         .modal-msg {
             font-size: 1rem; color: #333; line-height: 1.6;
@@ -229,7 +230,7 @@
 <div id="app">
 
     <div id="customModal">
-        <div class="modal-content">
+        <div class="modal-content" tabindex="-1">
             <div id="modalMsg" class="modal-msg"></div>
             <div class="modal-btn-group" id="modalBtns"></div>
         </div>
@@ -330,9 +331,11 @@ function showModal(msg, type = 'alert', onConfirm = null) {
     }
     modal.style.display = 'flex';
     history.pushState({ modal: true }, '');
+    // 포커스를 modal-content로 명시적으로 이동 → 엉뚱한 요소에 포커스링 방지
+    modal.querySelector('.modal-content').focus();
 }
 
-window.addEventListener('popstate', (e) => {
+window.addEventListener('popstate', () => {
     const modal = document.getElementById('customModal');
     if (modal.style.display === 'flex') {
         modal.style.display = 'none';
