@@ -50,37 +50,35 @@ def get_winning_numbers():
     # 회차 + 날짜 추출
     date_match = re.search(r'(\d+)회차\s*[\(\（](\d{4})\.(\d{2})\.(\d{2})[\.\）\)]', html)
     if not date_match:
-        # 대체 패턴
         date_match = re.search(r'제\s*(\d+)\s*회[^(]*\((\d{4})\.(\d{2})\.(\d{2})', html)
     if not date_match:
         print("❌ 회차/날짜 파싱 실패")
-        print(html[:3000])  # 디버그용
         return None
 
-    round_num  = int(date_match.group(1))
-    draw_date  = f"{date_match.group(2)}-{date_match.group(3)}-{date_match.group(4)}"
+    round_num = int(date_match.group(1))
+    draw_date = f"{date_match.group(2)}-{date_match.group(3)}-{date_match.group(4)}"
 
     # 1등 조 + 번호 추출
-    # 네이버 연금복권 결과: "1조 123456" 형태
-    group_match  = re.search(r'1등[^<]*?(\d+)\s*조', html)
-    ticket_match = re.search(r'1등[^<]*?\d+\s*조[^<]*?(\d{6})', html)
+    # 실제 네이버 HTML 구조:
+    # <td class="sub_title">1등</td>
+    # <td class="sub_title">4조</td>
+    # <td class="type_bold">6</td><td class="type_bold">0</td>... (6자리)
+    block_match = re.search(
+        r'sub_title">1등</td>\s*<td[^>]*>(\d+)조</td>((?:\s*<td[^>]*>\d+</td>){6})',
+        html
+    )
+    if not block_match:
+        print("❌ 당첨 조/번호 파싱 실패")
+        print(html[:3000])
+        return None
 
-    # 대체 패턴: 조와 번호가 별도 태그에 있는 경우
-    if not group_match:
-        group_match  = re.search(r'(\d+)\s*조\s*(\d{6})', html)
-        if group_match:
-            win_group  = int(group_match.group(1))
-            win_ticket = group_match.group(2)
-        else:
-            print("❌ 당첨 조/번호 파싱 실패")
-            print(html[:3000])
-            return None
-    else:
-        win_group  = int(group_match.group(1))
-        win_ticket = ticket_match.group(1) if ticket_match else None
-        if not win_ticket:
-            print("❌ 당첨 번호 파싱 실패")
-            return None
+    win_group  = int(block_match.group(1))
+    digits     = re.findall(r'<td[^>]*>(\d+)</td>', block_match.group(2))
+    win_ticket = ''.join(digits[:6])
+
+    if len(win_ticket) != 6:
+        print(f"❌ 번호 자릿수 오류: {win_ticket}")
+        return None
 
     print(f"✅ {round_num}회차 | 당첨: {win_group}조 {win_ticket} | 추첨일: {draw_date}")
     return {
@@ -97,14 +95,13 @@ def calc_result(my_group: int, my_ticket: str, win_group: int, win_ticket: str) 
         return "🏆 1등"
     if my_ticket == win_ticket:
         return "🥈 2등"  # 조만 다르고 번호 일치
-    # 앞자리 일치 개수로 3~7등 판정
+    # 끝자리부터 일치 개수로 3~7등 판정
     match_digits = 0
-    for i in range(5, -1, -1):  # 뒤에서부터 비교
+    for i in range(5, -1, -1):
         if my_ticket[i] == win_ticket[i]:
             match_digits += 1
         else:
             break
-    if match_digits >= 6: return "🏆 1등"
     if match_digits == 5: return "🥉 3등"
     if match_digits == 4: return "🎖 4등"
     if match_digits == 3: return "🎗 5등"
@@ -172,7 +169,6 @@ def main():
     win_ticket = pension["win_ticket"]
     round_num  = pension["round"]
 
-    # 이번 회차 미확인 복권 조회
     response = supabase.table("zpension").select("*").eq("is_checked", False).eq("draw_round", round_num).execute()
     rows = response.data
 
