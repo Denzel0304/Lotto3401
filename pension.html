@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>내 전용 연금복권 관리자</title>
+    <style>
+        :root {
+            --primary: #7c3aed;
+            --primary-light: #ede9fe;
+            --success: #34c759;
+            --danger: #ff3b30;
+            --bg: #f2f2f7;
+            --pastel-green: #b2dfdb;
+            --pastel-pink: #ffcdd2;
+        }
+        body {
+            font-family: -apple-system, sans-serif;
+            background: var(--bg);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-bottom: 50px;
+        }
+        .card {
+            width: 100%;
+            max-width: 450px;
+            background: white;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+        h3 { margin: 0; font-size: 1.1rem; color: #333; }
+
+        /* ── LOCK SCREEN ── */
+        #lockScreen {
+            position: fixed; inset: 0;
+            background: var(--bg);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            z-index: 9999;
+        }
+        .lock-box {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 32px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: flex; flex-direction: column;
+            align-items: center; gap: 16px;
+            width: 280px;
+        }
+        .lock-title { font-size: 1.4rem; font-weight: bold; color: #333; }
+        .lock-input {
+            width: 100%; padding: 14px; border-radius: 12px;
+            border: 1px solid #ddd; font-size: 1.1rem;
+            text-align: center; letter-spacing: 6px; outline: none;
+            box-sizing: border-box;
+        }
+        .lock-input:focus { border-color: var(--primary); }
+        .lock-input.error { border-color: var(--danger); animation: shake 0.3s; }
+        .lock-btn {
+            width: 100%; padding: 14px; border-radius: 12px;
+            background: var(--primary); color: white;
+            font-size: 1rem; font-weight: bold; border: none; cursor: pointer;
+        }
+        .lock-err { font-size: 0.85rem; color: var(--danger); height: 16px; }
+        @keyframes shake {
+            0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)}
+        }
+
+        #app { display: none; width: 100%; flex-direction: column; align-items: center; }
+
+        /* ── MODAL ── */
+        #customModal {
+            display: none; position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 1000;
+            justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: white; width: 85%; max-width: 320px;
+            padding: 25px; border-radius: 24px; text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: popUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .modal-msg {
+            font-size: 1rem; color: #333; line-height: 1.6;
+            margin-bottom: 25px; word-break: keep-all;
+            font-weight: 500; white-space: pre-line;
+        }
+        .modal-btn-group { display: flex; gap: 10px; }
+        .modal-btn {
+            flex: 1; padding: 14px; border-radius: 14px;
+            font-weight: bold; border: none; cursor: pointer; font-size: 0.95rem;
+        }
+        .btn-confirm { background: var(--primary); color: white; }
+        .btn-cancel  { background: #eee; color: #666; }
+        @keyframes popUp {
+            from { opacity: 0; transform: scale(0.9); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+
+        /* ── 모든조 토글 ── */
+        .all-group-toggle {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 16px; border-radius: 14px;
+            background: var(--primary-light); margin-bottom: 14px;
+            cursor: pointer; -webkit-tap-highlight-color: transparent;
+        }
+        .all-group-toggle span { font-weight: bold; color: var(--primary); font-size: 0.95rem; }
+        .toggle-switch {
+            width: 44px; height: 26px; border-radius: 13px;
+            background: #ccc; position: relative; transition: background 0.2s;
+        }
+        .toggle-switch.on { background: var(--primary); }
+        .toggle-knob {
+            position: absolute; top: 3px; left: 3px;
+            width: 20px; height: 20px; border-radius: 50%;
+            background: white; transition: left 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        .toggle-switch.on .toggle-knob { left: 21px; }
+
+        /* ── 조 선택 그리드 ── */
+        .group-grid {
+            display: flex; gap: 8px; margin-bottom: 14px;
+        }
+        .group-btn {
+            flex: 1; padding: 10px 0; border-radius: 10px;
+            border: 2px solid #ddd; background: white;
+            font-size: 0.95rem; font-weight: bold; color: #555;
+            cursor: pointer; -webkit-tap-highlight-color: transparent;
+            transition: all 0.15s;
+        }
+        .group-btn.selected {
+            background: var(--primary); color: white; border-color: var(--primary);
+        }
+        .group-btn:disabled { opacity: 0.35; cursor: default; }
+
+        /* ── 번호 입력 ── */
+        .ticket-input-wrap {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+        }
+        .ticket-input {
+            flex: 1; padding: 14px; border-radius: 12px;
+            border: 2px solid #ddd; font-size: 1.4rem;
+            text-align: center; letter-spacing: 8px; outline: none;
+            font-weight: bold; color: #333;
+        }
+        .ticket-input:focus { border-color: var(--primary); }
+
+        /* ── 미리보기 ── */
+        .preview-area {
+            min-height: 48px; display: flex; align-items: center;
+            justify-content: center; gap: 6px; margin: 12px 0;
+            flex-wrap: wrap;
+        }
+        .ticket-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: var(--primary-light); border-radius: 12px;
+            padding: 8px 14px;
+        }
+        .ticket-badge .grp {
+            font-size: 0.8rem; font-weight: bold; color: var(--primary);
+            background: white; border-radius: 6px; padding: 2px 7px;
+        }
+        .ticket-badge .num {
+            font-size: 1rem; font-weight: bold; color: #333; letter-spacing: 3px;
+        }
+
+        /* ── 버튼 ── */
+        .btn-main {
+            width: 100%; padding: 14px; border: none; border-radius: 12px;
+            font-size: 1rem; font-weight: bold; cursor: pointer;
+        }
+        .btn-gen  { background: var(--primary); color: white; margin-bottom: 8px; }
+        .btn-save { background: var(--success); color: white; margin-top: 8px; }
+        .btn-save:disabled { background: #ccc; opacity: 0.6; cursor: default; }
+
+        .top-actions {
+            display: flex; gap: 10px; margin-bottom: 15px;
+            width: 100%; max-width: 450px;
+        }
+        .btn-top-pink {
+            background-color: var(--pastel-pink); color: #c62828;
+            flex: 1; border-radius: 12px; padding: 12px;
+            font-weight: bold; border: none; cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* ── 목록 ── */
+        .list-header-top {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 8px;
+        }
+        .list-item {
+            background: #f9f9f9; padding: 15px; border-radius: 15px;
+            margin-bottom: 12px; border-left: 5px solid #ddd;
+        }
+        .list-item.checked { border-left-color: var(--success); background: #f0fdf4; }
+        .draw-info {
+            font-size: 0.75rem; color: #888; margin-bottom: 10px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .win-tag { font-weight: 900; font-size: 0.9rem; }
+        .result-miss    { color: #aaa; }
+        .result-7th     { color: #90caf9; }
+        .result-6th     { color: #64b5f6; }
+        .result-5th     { color: #ff9500; }
+        .result-4th     { color: #ff6b00; }
+        .result-3rd     { color: #ff3b30; }
+        .result-2nd     { color: #ff3b30; }
+        .result-1st     { color: #7c3aed; }
+        .result-unknown { color: #aaa; }
+
+        .my-ticket-row {
+            display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+        }
+        .grp-chip {
+            font-size: 0.75rem; font-weight: bold; color: white;
+            background: var(--primary); border-radius: 6px; padding: 3px 8px;
+            white-space: nowrap;
+        }
+        .ticket-num {
+            font-size: 1.1rem; font-weight: bold; letter-spacing: 4px; color: #333;
+        }
+
+        .win-section {
+            margin-top: 8px; padding: 8px 12px;
+            background: #ede9fe; border-radius: 8px;
+            border-left: 3px solid var(--primary);
+            font-size: 0.82rem; color: #555;
+        }
+        .win-section b { color: var(--primary); }
+
+        .action-row { display: flex; gap: 8px; margin-top: 12px; }
+        .btn-check {
+            background: var(--pastel-green); color: #00695c;
+            padding: 10px; font-size: 0.85rem; flex: 2;
+            border-radius: 8px; border: none; font-weight: bold; cursor: pointer;
+        }
+        .btn-check:disabled { background: #e0e0e0; color: #9e9e9e; cursor: default; }
+        .btn-delete {
+            background: white; color: var(--danger);
+            border: 1px solid var(--danger); padding: 10px;
+            font-size: 0.85rem; flex: 1; border-radius: 8px; font-weight: bold; cursor: pointer;
+        }
+        .info-banner {
+            background: #ede9fe; border-left: 4px solid var(--primary);
+            padding: 10px 14px; border-radius: 10px;
+            font-size: 0.8rem; color: #5b21b6; margin-bottom: 12px; line-height: 1.5;
+        }
+        .section-divider {
+            border: none; border-top: 1px solid #eee; margin: 16px 0;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ══ LOCK ══ -->
+<div id="lockScreen">
+    <div class="lock-box">
+        <div class="lock-title">🎰 연금복권 관리자</div>
+        <input class="lock-input" id="pwInput" type="password" maxlength="10"
+               placeholder="····" autocomplete="off"
+               onkeydown="if(event.key==='Enter')unlock()">
+        <div class="lock-err" id="lockErr"></div>
+        <button class="lock-btn" onclick="unlock()">확인</button>
+    </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app">
+
+    <div id="customModal">
+        <div class="modal-content">
+            <div id="modalMsg" class="modal-msg"></div>
+            <div class="modal-btn-group" id="modalBtns"></div>
+        </div>
+    </div>
+
+    <!-- 자동 생성 -->
+    <div class="card">
+        <h3>🎲 랜덤 번호 생성</h3>
+        <div style="margin-top:14px;">
+            <div class="all-group-toggle" id="autoToggle" onclick="toggleAllGroup('auto')">
+                <span>모든 조 선택 (1~5조 전부)</span>
+                <div class="toggle-switch" id="autoToggleSwitch">
+                    <div class="toggle-knob"></div>
+                </div>
+            </div>
+            <div class="group-grid" id="autoGroupGrid">
+                <button class="group-btn" onclick="selectGroup('auto',1)">1조</button>
+                <button class="group-btn" onclick="selectGroup('auto',2)">2조</button>
+                <button class="group-btn" onclick="selectGroup('auto',3)">3조</button>
+                <button class="group-btn" onclick="selectGroup('auto',4)">4조</button>
+                <button class="group-btn" onclick="selectGroup('auto',5)">5조</button>
+            </div>
+        </div>
+        <div id="autoBalls" class="preview-area">
+            <span style="color:#ccc;">번호를 생성하세요</span>
+        </div>
+        <button class="btn-main btn-gen" onclick="generateAuto()">랜덤 번호 생성</button>
+        <button id="saveAutoBtn" class="btn-main btn-save" onclick="saveTickets('auto')" disabled>저장</button>
+    </div>
+
+    <!-- 수동 입력 -->
+    <div class="card">
+        <h3>✍️ 수동 번호 입력</h3>
+        <div style="margin-top:14px;">
+            <div class="all-group-toggle" id="manualToggle" onclick="toggleAllGroup('manual')">
+                <span>모든 조 선택 (1~5조 전부)</span>
+                <div class="toggle-switch" id="manualToggleSwitch">
+                    <div class="toggle-knob"></div>
+                </div>
+            </div>
+            <div class="group-grid" id="manualGroupGrid">
+                <button class="group-btn" onclick="selectGroup('manual',1)">1조</button>
+                <button class="group-btn" onclick="selectGroup('manual',2)">2조</button>
+                <button class="group-btn" onclick="selectGroup('manual',3)">3조</button>
+                <button class="group-btn" onclick="selectGroup('manual',4)">4조</button>
+                <button class="group-btn" onclick="selectGroup('manual',5)">5조</button>
+            </div>
+        </div>
+        <div class="ticket-input-wrap">
+            <input class="ticket-input" id="manualInput" type="number"
+                   maxlength="6" placeholder="000000"
+                   oninput="onManualInput()" onkeydown="if(event.key==='Enter')saveTickets('manual')">
+        </div>
+        <div id="manualBalls" class="preview-area">
+            <span style="color:#ccc;">6자리를 입력하세요</span>
+        </div>
+        <button id="saveManualBtn" class="btn-main btn-save" onclick="saveTickets('manual')" disabled>저장</button>
+    </div>
+
+    <div class="top-actions">
+        <button class="btn-top-pink" onclick="deleteAllPensions()">전체 삭제</button>
+    </div>
+
+    <!-- 목록 -->
+    <div class="card">
+        <div class="list-header-top">
+            <h3>📂 목록</h3>
+        </div>
+        <div class="info-banner">
+            🤖 당첨 확인은 매주 목요일 밤 9시 이후 자동으로 업데이트됩니다.
+        </div>
+        <div id="pensionList">불러오는 중...</div>
+    </div>
+
+</div>
+
+<script>
+const GAS_URL  = 'YOUR_PENSION_GAS_URL_HERE';
+const LS_KEY   = 'pension_auth';
+const LS_TOKEN = 'pension_token';
+
+// 상태
+const state = {
+    auto:   { allGroup: false, selectedGroup: null, tickets: [] },
+    manual: { allGroup: false, selectedGroup: null }
+};
+
+// ── GAS 통신 ────────────────────────────────────────────────
+async function gasCall(params) {
+    const token = localStorage.getItem(LS_TOKEN);
+    const res = await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ ...params, token }).toString()
+    });
+    return await res.json();
+}
+
+// ── 잠금 해제 ────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+    if (localStorage.getItem(LS_KEY) === 'ok' && localStorage.getItem(LS_TOKEN)) {
+        document.getElementById('lockScreen').style.display = 'none';
+        document.getElementById('app').style.display = 'flex';
+        fetchList();
+    }
+});
+
+async function unlock() {
+    const val = document.getElementById('pwInput').value;
+    const result = await gasCall({ action: 'checkPassword', password: val });
+    if (result.success) {
+        localStorage.setItem(LS_KEY, 'ok');
+        localStorage.setItem(LS_TOKEN, result.token);
+        document.getElementById('lockScreen').style.display = 'none';
+        document.getElementById('app').style.display = 'flex';
+        fetchList();
+    } else {
+        const inp = document.getElementById('pwInput');
+        document.getElementById('lockErr').textContent = result.message || '비밀번호가 틀렸습니다';
+        inp.classList.add('error');
+        inp.value = '';
+        setTimeout(() => { inp.classList.remove('error'); document.getElementById('lockErr').textContent = ''; }, 1500);
+    }
+}
+
+// ── 모달 (History API 뒤로가기 패턴 그대로) ─────────────────
+function showModal(msg, type = 'alert', onConfirm = null) {
+    const modal = document.getElementById('customModal');
+    const msgBox = document.getElementById('modalMsg');
+    const btnGrp = document.getElementById('modalBtns');
+    msgBox.innerText = msg;
+    btnGrp.innerHTML = '';
+    if (type === 'confirm') {
+        const cBtn = document.createElement('button');
+        cBtn.className = 'modal-btn btn-cancel'; cBtn.innerText = '취소';
+        cBtn.onclick = () => { modal.style.display = 'none'; history.back(); };
+        const sBtn = document.createElement('button');
+        sBtn.className = 'modal-btn btn-confirm'; sBtn.innerText = '확인';
+        sBtn.onclick = () => { modal.style.display = 'none'; history.back(); onConfirm(); };
+        btnGrp.appendChild(cBtn); btnGrp.appendChild(sBtn);
+    } else {
+        const okBtn = document.createElement('button');
+        okBtn.className = 'modal-btn btn-confirm'; okBtn.innerText = '확인';
+        okBtn.onclick = () => { modal.style.display = 'none'; history.back(); };
+        btnGrp.appendChild(okBtn);
+    }
+    modal.style.display = 'flex';
+    history.pushState({ modal: true }, '');
+}
+
+window.addEventListener('popstate', () => {
+    const modal = document.getElementById('customModal');
+    if (modal.style.display === 'flex') modal.style.display = 'none';
+});
+
+// ── 모든조 토글 ──────────────────────────────────────────────
+function toggleAllGroup(mode) {
+    state[mode].allGroup = !state[mode].allGroup;
+    const sw = document.getElementById(mode + 'ToggleSwitch');
+    sw.classList.toggle('on', state[mode].allGroup);
+
+    // 조 버튼 비활성화/활성화
+    const grid = document.getElementById(mode + 'GroupGrid');
+    grid.querySelectorAll('.group-btn').forEach(btn => {
+        btn.disabled = state[mode].allGroup;
+        btn.classList.remove('selected');
+    });
+    state[mode].selectedGroup = null;
+
+    // 미리보기 초기화
+    if (mode === 'auto') {
+        state.auto.tickets = [];
+        document.getElementById('autoBalls').innerHTML = '<span style="color:#ccc;">번호를 생성하세요</span>';
+        document.getElementById('saveAutoBtn').disabled = true;
+    } else {
+        renderManualPreview();
+        updateManualSaveBtn();
+    }
+}
+
+// ── 조 선택 ─────────────────────────────────────────────────
+function selectGroup(mode, num) {
+    if (state[mode].allGroup) return;
+    state[mode].selectedGroup = (state[mode].selectedGroup === num) ? null : num;
+    const grid = document.getElementById(mode + 'GroupGrid');
+    grid.querySelectorAll('.group-btn').forEach((btn, i) => {
+        btn.classList.toggle('selected', (i + 1) === state[mode].selectedGroup);
+    });
+    if (mode === 'manual') { renderManualPreview(); updateManualSaveBtn(); }
+    if (mode === 'auto')   { state.auto.tickets = []; document.getElementById('autoBalls').innerHTML = '<span style="color:#ccc;">번호를 생성하세요</span>'; document.getElementById('saveAutoBtn').disabled = true; }
+}
+
+// ── 자동 생성 ────────────────────────────────────────────────
+function generateAuto() {
+    const allGroup = state.auto.allGroup;
+    const selGroup = state.auto.selectedGroup;
+
+    if (!allGroup && !selGroup) {
+        showModal('조를 선택하거나\n모든 조를 켜주세요.');
+        return;
+    }
+
+    // 번호는 항상 1개 (공통)
+    const ticketNum = String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
+
+    if (allGroup) {
+        // 1~5조 모두, 같은 번호
+        state.auto.tickets = [1,2,3,4,5].map(g => ({ group_num: g, ticket_num: ticketNum }));
+    } else {
+        state.auto.tickets = [{ group_num: selGroup, ticket_num: ticketNum }];
+    }
+
+    renderAutoPreview();
+    document.getElementById('saveAutoBtn').disabled = false;
+}
+
+function renderAutoPreview() {
+    const container = document.getElementById('autoBalls');
+    if (!state.auto.tickets.length) {
+        container.innerHTML = '<span style="color:#ccc;">번호를 생성하세요</span>';
+        return;
+    }
+    container.innerHTML = state.auto.tickets.map(t => ticketBadgeHTML(t.group_num, t.ticket_num)).join('');
+}
+
+// ── 수동 입력 ────────────────────────────────────────────────
+function onManualInput() {
+    // 6자리 초과 방지
+    const inp = document.getElementById('manualInput');
+    if (inp.value.length > 6) inp.value = inp.value.slice(0, 6);
+    renderManualPreview();
+    updateManualSaveBtn();
+}
+
+function renderManualPreview() {
+    const container = document.getElementById('manualBalls');
+    const val = getManualTicketNum();
+    const allGroup = state.manual.allGroup;
+    const selGroup = state.manual.selectedGroup;
+
+    if (!val || val.length < 6) {
+        container.innerHTML = '<span style="color:#ccc;">6자리를 입력하세요</span>';
+        return;
+    }
+    if (!allGroup && !selGroup) {
+        container.innerHTML = '<span style="color:#ccc;">조를 선택하세요</span>';
+        return;
+    }
+
+    if (allGroup) {
+        container.innerHTML = [1,2,3,4,5].map(g => ticketBadgeHTML(g, val)).join('');
+    } else {
+        container.innerHTML = ticketBadgeHTML(selGroup, val);
+    }
+}
+
+function getManualTicketNum() {
+    const val = document.getElementById('manualInput').value.trim();
+    return val.padStart(6, '0').slice(0, 6);
+}
+
+function updateManualSaveBtn() {
+    const val = getManualTicketNum();
+    const ready = val.length === 6 && (state.manual.allGroup || state.manual.selectedGroup);
+    document.getElementById('saveManualBtn').disabled = !ready;
+}
+
+// ── 티켓 배지 HTML ───────────────────────────────────────────
+function ticketBadgeHTML(group, num) {
+    return `<div class="ticket-badge">
+        <span class="grp">${group}조</span>
+        <span class="num">${num}</span>
+    </div>`;
+}
+
+// ── 저장 ─────────────────────────────────────────────────────
+async function saveTickets(mode) {
+    let tickets = [];
+
+    if (mode === 'auto') {
+        tickets = state.auto.tickets;
+        if (!tickets.length) return;
+    } else {
+        const val = getManualTicketNum();
+        if (val.length < 6) return;
+        if (state.manual.allGroup) {
+            tickets = [1,2,3,4,5].map(g => ({ group_num: g, ticket_num: val }));
+        } else if (state.manual.selectedGroup) {
+            tickets = [{ group_num: state.manual.selectedGroup, ticket_num: val }];
+        } else return;
+    }
+
+    const result = await gasCall({
+        action: 'saveTickets',
+        tickets: JSON.stringify(tickets)
+    });
+
+    if (result.success) {
+        if (mode === 'auto') {
+            document.getElementById('autoBalls').innerHTML =
+                '<span style="font-weight:bold;color:var(--success)">✅ 저장 완료!</span>';
+            document.getElementById('saveAutoBtn').disabled = true;
+            state.auto.tickets = [];
+        } else {
+            document.getElementById('manualInput').value = '';
+            document.getElementById('manualBalls').innerHTML =
+                '<span style="font-weight:bold;color:var(--success)">✅ 저장 완료!</span>';
+            document.getElementById('saveManualBtn').disabled = true;
+        }
+        fetchList();
+    } else {
+        showModal('저장 실패: ' + (result.message || '오류'));
+    }
+}
+
+// ── 목록 조회 ────────────────────────────────────────────────
+async function fetchList() {
+    const result = await gasCall({ action: 'fetchList' });
+    if (!result.success) return;
+    const data = result.data;
+
+    const container = document.getElementById('pensionList');
+    if (!data.length) {
+        container.innerHTML = '<p style="text-align:center;color:#ccc;">저장된 복권이 없습니다.</p>';
+        return;
+    }
+
+    container.innerHTML = data.map(item => {
+        const isDone   = item.is_checked;
+        const result   = item.win_result || '추첨대기중';
+
+        let resultCls = 'result-unknown';
+        if      (result.includes('1등')) resultCls = 'result-1st';
+        else if (result.includes('2등')) resultCls = 'result-2nd';
+        else if (result.includes('3등')) resultCls = 'result-3rd';
+        else if (result.includes('4등')) resultCls = 'result-4th';
+        else if (result.includes('5등')) resultCls = 'result-5th';
+        else if (result.includes('6등')) resultCls = 'result-6th';
+        else if (result.includes('7등')) resultCls = 'result-7th';
+        else if (result === '낙첨')      resultCls = 'result-miss';
+
+        let roundInfo = '';
+        if (item.draw_round) {
+            roundInfo = `<span style="font-size:0.72rem;color:#aaa;margin-left:4px;">${item.draw_round}회차</span>`;
+        }
+
+        let winSection = '';
+        if (isDone && item.win_group && item.win_ticket) {
+            winSection = `
+                <div class="win-section">
+                    🏆 당첨번호: <b>${item.win_group}조 ${item.win_ticket}</b>
+                </div>`;
+        }
+
+        return `
+            <div class="list-item ${isDone ? 'checked' : ''}">
+                <div class="draw-info">
+                    <span>${roundInfo}</span>
+                    <span class="win-tag ${resultCls}">${result}</span>
+                </div>
+                <div class="my-ticket-row">
+                    <span class="grp-chip">${item.group_num}조</span>
+                    <span class="ticket-num">${item.ticket_num}</span>
+                </div>
+                ${winSection}
+                <div class="action-row">
+                    <button class="btn-check" disabled>
+                        ${isDone ? '✅ 확인 완료' : '⏳ 추첨대기중'}
+                    </button>
+                    <button class="btn-delete" onclick="deleteItem('${item.id}')">삭제</button>
+                </div>
+            </div>`;
+    }).join('');
+}
+
+// ── 삭제 ─────────────────────────────────────────────────────
+function deleteItem(id) {
+    showModal('정말 삭제하시겠습니까?', 'confirm', async () => {
+        await gasCall({ action: 'deleteItem', id });
+        fetchList();
+    });
+}
+
+function deleteAllPensions() {
+    showModal('모든 복권을 삭제하시겠습니까?', 'confirm', async () => {
+        await gasCall({ action: 'deleteAllPensions' });
+        fetchList();
+    });
+}
+</script>
+</body>
+</html>
