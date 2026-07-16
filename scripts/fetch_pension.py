@@ -150,10 +150,10 @@ def build_telegram_message(pension, results):
         lines.append("")
         lines.append("🎉 <b>당첨 게임 상세</b>")
         for r in winners:
-            lines.append(f"  {r['win_result']}  {r['group_num']}조 {r['ticket_num']}")
+            lines.append(f"  {r['win_result']}  {r['group_num']}조 {r['ticket_num']}, 보너스 번호도 꼭 확인하세요!")
     else:
         lines.append("")
-        lines.append("😢 이번 회차는 당첨이 없습니다. 다음 기회에!")
+        lines.append("😢 이번 회차는 당첨이 없습니다. 하지만, 혹시 모르니 보너스 번호를 꼭 확인하세요!")
 
     return "\n".join(lines)
 
