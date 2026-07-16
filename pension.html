@@ -371,7 +371,7 @@ async function gasCall(params) {
     const res = await fetch(GAS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ ...params, token }).toString()
+        body: new URLSearchParams({ ...params, token, app: 'pension' }).toString()
     });
     return await res.json();
 }
