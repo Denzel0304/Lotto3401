@@ -2,8 +2,6 @@ name: 연금복권 당첨번호 확인
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 12 * * 4'  # 매주 목요일 21:00 KST (UTC 12:00)
 
 jobs:
   fetch-pension:
