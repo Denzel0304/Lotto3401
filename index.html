@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>복권 관리자</title>
+    <style>
+        :root {
+            --lotto:   #4a90e2;
+            --pension: #7c3aed;
+            --bg:      #f2f2f7;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, sans-serif;
+            background: var(--bg);
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 20px;
+        }
+
+        .hub-title {
+            font-size: 1.1rem; color: #888; font-weight: 500;
+            margin-bottom: 8px; letter-spacing: 0.5px;
+        }
+        .hub-main-title {
+            font-size: 1.9rem; font-weight: 900; color: #222;
+            margin-bottom: 40px; text-align: center;
+        }
+
+        .menu {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 100%;
+            max-width: 340px;
+        }
+
+        .menu-card {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            background: white;
+            border-radius: 22px;
+            padding: 22px 24px;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.07);
+            text-decoration: none;
+            transition: transform 0.15s, box-shadow 0.15s;
+            -webkit-tap-highlight-color: transparent;
+            cursor: pointer;
+        }
+        .menu-card:active {
+            transform: scale(0.97);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .menu-icon {
+            width: 54px; height: 54px;
+            border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.7rem; flex-shrink: 0;
+        }
+        .icon-lotto   { background: #e8f1fd; }
+        .icon-pension { background: #ede9fe; }
+
+        .menu-text { display: flex; flex-direction: column; gap: 3px; }
+        .menu-name {
+            font-size: 1.15rem; font-weight: 800; color: #222;
+        }
+        .menu-desc {
+            font-size: 0.78rem; color: #999; font-weight: 400;
+        }
+
+        .menu-arrow {
+            margin-left: auto;
+            font-size: 1.1rem; color: #ccc;
+        }
+
+        .footer-text {
+            margin-top: 48px;
+            font-size: 0.72rem; color: #bbb; text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <p class="hub-title">내 전용</p>
+    <p class="hub-main-title">🎟 복권 관리자</p>
+
+    <div class="menu">
+
+        <a class="menu-card" href="lotto.html">
+            <div class="menu-icon icon-lotto">🎲</div>
+            <div class="menu-text">
+                <span class="menu-name">로또 6/45</span>
+                <span class="menu-desc">매주 토요일 밤 9시 추첨</span>
+            </div>
+            <span class="menu-arrow">›</span>
+        </a>
+
+        <a class="menu-card" href="pension.html">
+            <div class="menu-icon icon-pension">🎰</div>
+            <div class="menu-text">
+                <span class="menu-name">연금복권 720+</span>
+                <span class="menu-desc">매주 목요일 밤 8시 10분 추첨</span>
+            </div>
+            <span class="menu-arrow">›</span>
+        </a>
+
+    </div>
+
+    <p class="footer-text">당첨 확인은 추첨 후 자동으로 업데이트됩니다</p>
+
+</body>
+</html>
