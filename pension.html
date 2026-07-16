@@ -146,10 +146,11 @@
             display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
         }
         .ticket-input {
-            flex: 1; padding: 14px; border-radius: 12px;
+            width: 100%; padding: 14px; border-radius: 12px;
             border: 2px solid #ddd; font-size: 1.4rem;
             text-align: center; letter-spacing: 8px; outline: none;
             font-weight: bold; color: #333;
+            box-sizing: border-box; min-width: 0;
         }
         .ticket-input:focus { border-color: var(--primary); }
 
